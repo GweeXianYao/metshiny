@@ -1,7 +1,10 @@
 # PPCA Method -------------------------------------------------------------
 
 #' @importFrom stats prcomp qnorm sd glm gaussian
-
+#' @importFrom magrittr %>%
+#' @importFrom future plan multisession
+#' @importFrom future.apply future_lapply
+#' @importFrom furrr future_map
 PPCA_one_q <- function(data, covariates_data, q, eps = 0.01, max_it = 1000, initial_guesses){
 
   # Initialise variables
@@ -177,19 +180,24 @@ PPCA_one_q <- function(data, covariates_data, q, eps = 0.01, max_it = 1000, init
 
 
 PPCA_multi_q = function(data, covariates_data, q_min, q_max, eps = 0.01, max_it = 1000){
+  ori_plan <- plan()
+#  plan(multisession)
 
   X <- q_min:q_max
-  output <- list()
-  for(x in q_min:q_max){
-    if(missing(covariates_data)) {
-      output[[x]] <- PPCA_one_q(data, q = x,eps = 0.01)
-    }
-    else {
-      output[[x]] <- EM <- PPCA_one_q(data, covariates_data = covariates_data, q = x, eps = 0.01)
-    }
+
+  if(missing(covariates_data)) {
+    output <- future_lapply(X, function(x) {
+      EM <- PPCA_one_q(data, q = x,eps = 0.01)
+    })
+  }
+  else {
+    output <- future_lapply(X, function(x) {
+      EM <- PPCA_one_q(data, covariates_data = covariates_data, q = x, eps = 0.01)
+    })
   }
 
   names(output) <- c(paste0("Q", X))
+  on.exit(plan(ori_plan), add = TRUE)
   return(output)
 }
 
@@ -245,12 +253,14 @@ loadings_std = function(data, q, B, initial_guesses){
     return(out)
   }
 
-  list_loadings = list()
-  for(i in 1:B) {
-    list_loadings[[i]] <- one_replica(data, q)
-  }
+  ori_plan <- plan()
+#  plan(multisession)
+
+  list_loadings = 1:B %>%
+    future_map(~ one_replica(data, q))
 
   sd_loading = apply(simplify2array(list_loadings), c(1,2), sd)
+  on.exit(plan(ori_plan), add = TRUE)
   return(sd_loading)
 }
 
@@ -269,11 +279,11 @@ loadings_alpha_std = function(data,covariates_data, q, B, initial_guesses){
     out = list(); out[[1]] = EM$loadings; out[[2]] = EM$alpha
     return(out)
   }
-  
-  list_boot <- list()
-  for(i in 1:B) {
-    list_boot[[i]] <- one_replica(data, covariates_data, q)
-  }
+  ori_plan <- plan()
+#  plan(multisession)
+
+  list_boot = 1:B %>%
+    future_map(~ one_replica(data,covariates_data, q))
 
   loads = lapply(list_boot, "[", 1)
   alphas = lapply(list_boot, "[", 2)
@@ -287,6 +297,8 @@ loadings_alpha_std = function(data,covariates_data, q, B, initial_guesses){
 
   sd_alpha = apply(simplify2array(alphas), c(1,2), sd)
   sd_loads = apply(simplify2array(loads), c(1,2), sd)
+
+  on.exit(plan(ori_plan), add = TRUE)
 
   output = list(sd_alpha = sd_alpha,
                 sd_loads = sd_loads)

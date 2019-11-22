@@ -15,8 +15,12 @@ Depends: R (>= 3.5.0)
 Imports: 
     ellipse,
     fastDummies,
+    furrr,
+    future,
+    future.apply,
     graphics,
     gtools,
+    magrittr,
     stats,
     utils
 RoxygenNote: 6.1.1
