@@ -1,0 +1,13 @@
+name: test2
+title: test2
+username:
+account: metaboliter
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1511600
+bundleId: 2609354
+url: https://metaboliter.shinyapps.io/test2/
+when: 1574419002.2518
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: MPPCA_desc_td.html|MPPCA_desc_ug.html|www/app-logo.png|www/Homepage.jpg|www/logo-gitlab.png|www/logo.png|www/webpage-logo.png
